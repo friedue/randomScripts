@@ -1,0 +1,31 @@
+OBJECT=$(shell ls *.sra | sed 's/\.sra/.bam.bai/')
+
+.PHONY: all
+all: remove_empty $(OBJECT)
+
+.SECONDARY:
+
+MAPPER = /package/bowtie2-2.1.0/bowtie2 -x /data/projects/misc/genomes/bowtie2/indexes/dm3 --fast-local -p 30
+
+# data obtained from:
+# http://www.ncbi.nlm.nih.gov/sra?term=SRX111555
+# wget -r -nd "ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByStudy/sra/SRP%2FSRP010%2FSRP010264/"
+
+%_1.fastq: %.sra
+	# the --split-3 is to get each pair in a different file
+	/package/sratoolkit.2.1.16-centos_linux64/bin/fastq-dump --split-3 $^ 
+
+%_2.fastq: %_1.fastq
+	echo " "
+
+%.bam: %_1.fastq %_2.fastq
+	echo "mapping $^" > $(basename $@).log
+	$(MAPPER) -1 $< -2 $(word 2, $^) 2>> $(basename $@).log | /package/samtools/samtools view -q 1 -Shu - | /package/samtools/samtools sort -m 10G -@ 10 - -o sort_$(basename $@) > $@
+
+%.bam.bai: %.bam
+	/package/samtools/samtools index $<
+
+remove_empty:
+	echo "removing empty files"
+	touch test
+	find ./  -size 0 | xargs rm

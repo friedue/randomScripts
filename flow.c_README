@@ -1,0 +1,2 @@
+# from: http://ctan.mackichan.com/support/flow/ --> also contains example tex and docu
+gcc -o flow flow.c
