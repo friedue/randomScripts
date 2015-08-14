@@ -1,5 +1,7 @@
 #!/bin/sh
 ##############################
+# (c) FrieDue, Aug 2015
+##############################
 # This script turns the wig file of eRRBS runs produced by the Epicore into bigWig files.
 # To achieve this, the wig file is first split into its 4 parts:
 # methCpG, methCpG_R, NOmethCpG, NOmethCpG_R - these are based on the following
