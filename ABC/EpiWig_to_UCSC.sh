@@ -25,8 +25,8 @@ grep -v browser ${EpicoreWig} | awk 'BEGIN{FS="\""} /track/ {gsub(" ","_",$2);ou
 
 rm tmp*NOmeth*
 
-# to merge fwd and rev strand, I first need to split the files per chromosome
-# (indicated after "variableStep"
+# to merge fwd and rev strand, I first split the files per chromosome
+# (indicated after "variableStep") and merge them chromosome by chromosome
 for i in methCpG methCpG_R
 do
 File=tmp.*${i}
@@ -38,14 +38,13 @@ done
 # merge fwd and rev
 Sample_short=`echo ${Sample} | sed 's/_methCpG.*//g'`
 echo "merging forward and reverse strand counts for ${Sample_short}"
-
 for CHR in `ls tmp.*methCpG_chr* | awk 'BEGIN {FS="_"}{print $NF}'`
 do
 cat tmp.${Sample_short}_methCpG_${CHR} tmp.${Sample_short}_methCpG_R_${CHR} | sort -k1,1n | uniq >> tmp.${Sample_short}_freqC.wig
 done
 
 # turn wig into bigwig
-echo "generating bigWig of cytosine counts for ${SAMPLE_short}: "
+echo "generating bigWig of cytosine counts: ${Sample_short}_freqC.bw"
 wigToBigWig tmp.${Sample_short}_freqC.wig ${ChromInfo} ${Sample_short}_freqC.bw
 
 # cleaning up
