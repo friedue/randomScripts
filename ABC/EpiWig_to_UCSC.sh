@@ -21,6 +21,7 @@ ChromInfo=${2} # for bigWig conversion
 
 # split Epicore wig file into individual files per track
 # using the information from name="xxxx" for the naming of the output files
+echo "Splitting ${EpicoreWig} into 4 tracks"
 grep -v browser ${EpicoreWig} | awk 'BEGIN{FS="\""} /track/ {gsub(" ","_",$2);out="tmp."$2}{OFS="\"";print > out}'
 
 rm tmp*NOmeth*
