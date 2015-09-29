@@ -37,6 +37,7 @@ if [ "$3" = convertMinus ]; then
 	echo "converting negative strand CpG-me values into positive integers"
 	awk '{for (i=1; i<=NF; i++) if ($i <= 0) $i = -$i; print}' tmp.*methCpG_R > tmp2.${TMP}
 	rm tmp.*methCpG_R
+	mv tmp2.${TMP} tmp.${TMP}
 fi
 
 # to merge fwd and rev strand, I first split the files per chromosome
