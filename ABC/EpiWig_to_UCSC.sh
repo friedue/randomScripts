@@ -26,6 +26,12 @@ grep -v browser ${EpicoreWig} | awk 'BEGIN{FS="\""} /track/ {gsub(" ","_",$2);ou
 
 rm tmp*NOmeth*
 
+####!!!!!!!!!!!!!!!!!!!##
+## to do: convert negative strand values into their absolute values which makes it easier to digest visually in IGV
+## awk '{for (i=1; i<=NF; i++) if ($i <= 0) $i = -$i; print }' tmp.BON1_B1_methCpG_R ## this will print absolute values for the methCpG_R files
+## alternatively: merge values for plus & minus strand
+############
+
 # to merge fwd and rev strand, I first split the files per chromosome
 # (indicated after "variableStep") and merge them chromosome by chromosome
 for i in methCpG methCpG_R
