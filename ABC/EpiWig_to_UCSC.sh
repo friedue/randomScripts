@@ -13,14 +13,14 @@
 # MethCpG and methCpG_R values are combined into one single wig file, which is subsequently
 # converted into a bigWig using UCSC tools.
 ##############################
-# usage: EpiWig_to_UCSCbigWig.sh B1_CpG.wig hg19.chromInfo.txt
+# usage: EpiWig_to_UCSCbigWig.sh B1_CpG.wig hg19.chromInfo.txt convertMinus
 ##########################
 EpicoreWig=${1} # Epicore eRRBS wig file
 ChromInfo=${2} # for bigWig conversion
 ##########################
 
 # split Epicore wig file into individual files per track
-# using the information from name="xxxx" for the naming of the output files
+# using the information from name="xxxx" for the naming of the output files (stored in $2)
 echo "Splitting ${EpicoreWig} into 4 tracks"
 grep -v browser ${EpicoreWig} | awk 'BEGIN{FS="\""} /track/ {gsub(" ","_",$2);out="tmp."$2}{OFS="\"";print > out}'
 
@@ -28,15 +28,22 @@ rm tmp*NOmeth*
 
 ####!!!!!!!!!!!!!!!!!!!##
 ## to do: convert negative strand values into their absolute values which makes it easier to digest visually in IGV
-## awk '{for (i=1; i<=NF; i++) if ($i <= 0) $i = -$i; print }' tmp.BON1_B1_methCpG_R ## this will print absolute values for the methCpG_R files
+## awk '{for (i=1; i<=NF; i++) if ($i < 0) $i = -$i; print }' tmp.BON1_B1_methCpG_R ## this will print absolute values for the methCpG_R files
 ## alternatively: merge values for plus & minus strand
 ############
+
+if [ "$3" = convertMinus ]; then
+	TMP=`ls tmp.*methCpG_R | sed 's/.*tmp\.\(.*\_methCpG\_R\)/\1/g'`
+	echo "converting negative strand CpG-me values into positive integers"
+	awk '{for (i=1; i<=NF; i++) if ($i <= 0) $i = -$i; print}' tmp.*methCpG_R > tmp2.${TMP}
+	rm tmp.*methCpG_R
+fi
 
 # to merge fwd and rev strand, I first split the files per chromosome
 # (indicated after "variableStep") and merge them chromosome by chromosome
 for i in methCpG methCpG_R
 do
-File=tmp.*${i}
+File=tmp*${i}
 Sample=`echo ${File} | sed 's/tmp\.\([a-zA-Z0-9_]*\)/\1/'`
 echo "Splitting chromosomes for ${Sample}"
 grep -v track ${File} | awk -v var1=${Sample} 'BEGIN {FS="="}/variableStep/{x="tmp."var1"_"$2}{print > x}'
