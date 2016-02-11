@@ -46,7 +46,7 @@ def get_mecounts(Read_seq, CpG_only):
         for bp in Read_seq:
             if bp.isupper():
                 Counts[0] += 1 # methylated Cs
-            if bp.islower():
+            elif bp.islower():
                 Counts[1] += 1 # unmethylated Cs
             elif bp == ".": 
                 Counts[2] += 1 # not a C
@@ -54,9 +54,9 @@ def get_mecounts(Read_seq, CpG_only):
         for bp in Read_seq:
             if bp == "Z":
                 Counts[0] += 1
-            if bp == "z":
+            elif bp == "z":
                 Counts[1] += 1
-            if bp == "." or bp.isupper() or bp.islower:
+            elif bp == "." or bp.isupper() or bp.islower:
                 Counts[2] += 1
     
     if sum(Counts) != len(Read_seq):
