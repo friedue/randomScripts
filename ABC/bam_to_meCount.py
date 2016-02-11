@@ -67,7 +67,7 @@ def get_mecounts(Read_seq, CpG_only):
 def get_mepercent(C):
     
     if C[1] > 0:
-        meperc = float(C[0])/float(C[1]) * 100
+        meperc = float(C[0])/float(C[1] + C[0]) * 100
     elif C[0] == 0:
         meperc = 'NA'
     else:
