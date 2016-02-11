@@ -23,6 +23,7 @@ def get_args():
     parser.add_argument('--CpGonly', action='store_true', default=False, help = 'If set, only cytosines in CpG contexts are taken into account.')
     parser.add_argument('--trimStart', '-strim', type=int, required=False, default = 0, help = 'Number indicating how many bp should be ignored at the 5 prime end of the read.')
     parser.add_argument('--trimEnd', '-etrim', type=int, required=False, default = 0, help = 'Number indicating how many bp should be ignored at the 3 prime end of the read.')
+    parser.add_argument('--checkStrand', action='store_true', default=False, help = 'If set, only reads mapping to the forward strand are taken into account.')
     
     args=parser.parse_args()
     return args
@@ -89,6 +90,11 @@ def main():
     i200 = 0
         
     for DNAread in infile:
+        
+        # ignore reverse strand reads if the checkStrand option is set
+        if args.checkStrand and DNAread.is_reverse:
+            continue            
+            
         me_seq = get_read_seq(DNAread, args.trimStart, args.trimEnd) 
         
         if len(me_seq) == 100:
