@@ -12,12 +12,12 @@ import gzip
 
 
 def get_args():
-    parser=argparse.ArgumentParser(description='Count numbers of methylated and unmethylated Cs per read')
+    parser=argparse.ArgumentParser(description='Count numbers of methylated and unmethylated Cs per read.'
+    'The output table contains: #meCpgG, #unmeCpG, #meC-otherContext, #unmeC-otherContext,read length')
     parser.add_argument('--BAMfile', '-in', type=str, required=True, help="BAM file")
     parser.add_argument('--outfile', '-o', type=str, required=True, help = 'Prefix for the output file of counts per reads')
     parser.add_argument('--trimStart', '-strim', type=int, required=False, default = 0, help = 'Number indicating how many bp should be ignored at the 5 prime end of the read.')
     parser.add_argument('--trimEnd', '-etrim', type=int, required=False, default = 0, help = 'Number indicating how many bp should be ignored at the 3 prime end of the read.')
-    parser.add_argument('--CpGonly', action='store_true', default=False, help = 'If set, only cytosines in CpG contexts are taken into account.')
     
     args=parser.parse_args()
     return args
@@ -38,26 +38,21 @@ def get_read_seq(Read, strim, etrim):
 
 
 
-def get_mecounts(Read_seq, CpG_only):
+def get_mecounts(Read_seq):
     '''counts the (un)methylated residues in a read'''
-    Counts = [0,0,0]
-    
-    if not CpG_only:
-        for bp in Read_seq:
-            if bp.isupper():
-                Counts[0] += 1 # methylated Cs
-            elif bp.islower():
-                Counts[1] += 1 # unmethylated Cs
-            elif bp == ".": 
-                Counts[2] += 1 # not a C
-    else:
-        for bp in Read_seq:
-            if bp == "Z":
-                Counts[0] += 1
-            elif bp == "z":
-                Counts[1] += 1
-            elif bp == "." or bp.isupper() or bp.islower:
-                Counts[2] += 1
+    Counts = [0,0,0,0,0]
+
+    for bp in Read_seq:
+        if bp == "Z": 
+            Counts[0] += 1 # methylated CpG
+        elif bp == "z":
+            Counts[1] += 1 # unmethylated CpG
+        elif bp.isupper():
+            Counts[2] += 1 # methylated other C
+        elif bp.islower():
+            Counts[3] += 1 # unmethylated other C
+        elif bp == ".":
+            Counts[4] += 1 # not a C
     
     if sum(Counts) != len(Read_seq):
             raise NameError("Individual counts (%d) do not match the length of the (trimmed) read sequence (%d)" % (sum(Counts), len(Read_seq)))
@@ -84,10 +79,10 @@ def main():
         
     for DNAread in infile:
         me_seq = get_read_seq(DNAread, args.trimStart, args.trimEnd)
-        c = get_mecounts(me_seq, CpG_only = args.CpGonly)
-        me_percent = get_mepercent(c)
+        c = get_mecounts(me_seq)
+      #  me_percent = get_mepercent(c)
 
-        fo.write('{}\t{}\t{}\t{}\t{}\n'.format(DNAread.query_name, me_percent, c[0], c[1], sum(c)))
+        fo.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(DNAread.query_name, c[0], c[1], c[2], c[3], c[4], sum(c)))
 
     fo.close() 
     
