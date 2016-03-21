@@ -37,6 +37,8 @@ def main():
     prev_cpg = max_dist * -2
 
     for Line in infile.readlines():
+        if 'track' in Line:
+            continue
         if args.tabSeparated:
             Line = Line.strip("\n")
             Line = Line.split("\t")
