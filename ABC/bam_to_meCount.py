@@ -55,7 +55,7 @@ def get_mecounts(Read_seq):
             Counts[4] += 1 # not a C
     
     if sum(Counts) != len(Read_seq):
-            raise NameError("Individual counts (%d) do not match the length of the (trimmed) read sequence (%d)" % (sum(Counts), len(Read_seq)))
+        raise StandardError("Individual counts (%d) do not match the length of the (trimmed) read sequence (%d)" % (sum(Counts), len(Read_seq)))
     
     return Counts
 
