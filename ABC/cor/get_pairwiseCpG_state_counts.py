@@ -13,11 +13,10 @@ import itertools
 
 
 def get_args():
-    parser=argparse.ArgumentParser(description='Count numbers of methylated and unmethylated Cs per read.'
-    'The output table contains: #meCpgG, #unmeCpG, #meC-otherContext, #unmeC-otherContext,read length')
+    parser=argparse.ArgumentParser(description='Count numbers of methylated and unmethylated Cs per read per adjacent CpG pair.')
     parser.add_argument('--BAMfile', '-bam', type = str, required=True, help="BAM file")
-    parser.add_argument('--CpGpairs', '-pairs', type = str, required=True, help="The bedGraph output of pileOMeth with chromosome, CpG position, %DNA me, reads with C, reads with T.")
-    parser.add_argument('--minMapQual', '-mmq', type = int, default=0, help="Min. mapping quality accepted for the reads that will be used to count the methylation state ocurrences. See http://bit.ly/25glGcI for information about the different aligners' MapQ calculations.")
+    parser.add_argument('--CpGpairs', '-pairs', type = str, required=True, help="The bedGraph output of pileOMeth with chromosome, CpG position, DNA me percent, reads with C, reads with T.")
+    parser.add_argument('--minMapQual', '-mmq', type = int, default=0, help="Min. mapping quality accepted for the reads that will be used to count the methylation state ocurrences. See http://bit.ly/25glGcI for information about the different aligners MapQ calculations.")
     parser.add_argument('--minCoverage', '-mc', type = int, default = 0, help = 'Indicate the minimum number of reads that must overlap with each adjacent pair.')
     parser.add_argument('--outfile', '-out', type = str, required=True, help = 'Prefix for the output file')
     
