@@ -14,7 +14,7 @@ import gzip
 def get_args():
     parser=argparse.ArgumentParser(description='Generate a list of adjacent CpGs based on pileOMeth output.')
     parser.add_argument('--CpGfile', '-i', type=str, required=True, help="The bedGraph output of pileOMeth with chromosome, CpG position, DNA me percent, reads with C, reads with T. The program expects the output in an _unstranded_ fashion, i.e., pileOMeth must have been used with --mergeContext.")
-    parser.add_argument('--outfile', '-o', type=str, required=True, help = 'Prefix for the output file (list of CpG pairs)')
+    parser.add_argument('--outfile', '-o', type=str, required=True, help = 'Prefix for the output file (list of CpG pairs). Note that the coordinated of the resulting CpG pairs are zero-based, half-open.')
     parser.add_argument('--tabSeparated', '-tab', action='store_true', default=False, help = 'Set this if the file is tab, rather than space separated.')
     parser.add_argument('--maxDist', '-d', type=int, required=False, default = 200, help = 'Maximum distance between adjacent CpG; usually the max. read length.')
     
