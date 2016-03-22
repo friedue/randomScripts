@@ -10,6 +10,7 @@ import os
 import doctest
 import gzip
 import itertools
+import warnings
 
 
 def get_args():
@@ -101,10 +102,13 @@ def main():
                     
                 state = bs_seq[b1] + bs_seq[b2-1]
                 
-                if '.' in state:
-                    raise StandardError("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], Read.query_name))
+                if not state in ['ZZ','Zz','zZ','zz']:
+                    #raise StandardError("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], #Read.query_name))
+                    warnings.warn("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], Read.query_name))
+                    continue
                 
                 # record state in temporary dictionary
+                
                 sdc = dict(itertools.izip(['ZZ','Zz','zZ','zz'], [0,0,0,0]))
                 sdc[state] += 1
                 
