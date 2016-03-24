@@ -9,9 +9,8 @@ import pysam
 import os
 import doctest
 import gzip
-import itertools
 import warnings
-
+import itertools
 
 def get_args():
     parser=argparse.ArgumentParser(description='Count numbers of methylated and unmethylated Cs per read per adjacent CpG pair.')
@@ -19,6 +18,8 @@ def get_args():
     parser.add_argument('--CpGpairs', '-pairs', type = str, required=True, help="Reads with pair information, must be _sorted_ by read name and contain the following columns: read name, chr, start, end (of overlapped pair). bedtools intersect -abam test03.bam -b pairs_03.bed -bed -u | awk '{OFS=t; print $1,$7,$8,$4}' | bedtools intersect -b stdin -a pairs_03.bed -f 1 -wb | awk '{OFS=t; print $7, $1, $2,$3}' | sort -k1,1g > intersect_test03_b.txt.")
     parser.add_argument('--minMapQual', '-mmq', type = int, default=0, help="Min. mapping quality accepted for the reads that will be used to count the methylation state ocurrences. See http://bit.ly/25glGcI for information about the different aligners MapQ calculations.")
     parser.add_argument('--minCoverage', '-mc', type = int, default = 0, help = 'Indicate the minimum number of reads that must overlap with each adjacent pair.')
+    parser.add_argument('--trimStart', '-strim', type=int, required=False, default = 0, help = 'Number indicating how many bp should be ignored at the 5 prime end of the read.')
+    parser.add_argument('--trimEnd', '-etrim', type=int, required=False, default = 0, help = 'Number indicating how many bp should be ignored at the 3 prime end of the read.')
     parser.add_argument('--outfile', '-out', type = str, required=True, help = 'Prefix for the output file')
     
     args=parser.parse_args()
@@ -50,6 +51,17 @@ def get_CIGARbased_sequence(readinfo):
     
     return new_seq
 
+
+def trim_seq(Read_seq, strim, etrim):
+    '''returns the trimmed sequence'''
+    
+    beg = 0 + strim
+    if etrim > 0:
+        end = -etrim
+    else:
+        end = None
+        
+    return Read_seq[beg:end]
 
 
 def main():
@@ -85,49 +97,68 @@ def main():
     # the methylation state information for those pairs
     for Read in bamfile:
         Rname = Read.query_name
-        if Rname in rpd:
-            chrom = Read.reference_name
-            r_start = int(Read.reference_start)
-            r_end = int(Read.reference_end)
         
-        # get pairs within the read's range
-            elig_pairs = rpd[Rname]
-        
-            if Read.mapping_quality >= args.minMapQual:
-            # first, check CIGAR string for coordinate-altering operations
-                cs = Read.cigarstring
-                if 'D' in cs or 'I' in cs or 'N' in cs or 'H' in cs or 'P' in cs:
-                    bs_seq = get_CIGARbased_sequence(Read)
-                else:
-                    bs_seq = [item for item in Read.tags if item[0] == 'XM'][0][1]
+        # is read overlapping with any adjacent CpG pairs?
+        if not Rname in rpd:
+            continue
             
-                for P in elig_pairs:
-                    P = tuple(P)
-                    if not Read.is_reverse:
-                        b1 = int(P[1]) - r_start
-                        b2 = int(P[2]) - 1 - r_start
-                        
-                    else:
-                        b1 = int(P[1]) + 1 - r_start
-                        b2 = int(P[2]) - r_start
-                        
-                    state = bs_seq[b1] + bs_seq[b2-1]
+        chrom = Read.reference_name
+        r_start = int(Read.reference_start)
+        r_end = int(Read.reference_end)
+    
+    # get pairs within the read's range
+        elig_pairs = rpd[Rname]
+    
+        if Read.mapping_quality < args.minMapQual:
+            continue
+            
+        # if read has proper minMapQual,
+        # check CIGAR string for coordinate-altering operations
+        cs = Read.cigarstring
+        if 'D' in cs or 'I' in cs or 'N' in cs or 'H' in cs or 'P' in cs:
+            bs_seq = get_CIGARbased_sequence(Read)
+        else:
+            bs_seq = [item for item in Read.tags if item[0] == 'XM'][0][1]
+        
+        # get the length of the sequence after taking the trimming into account
+        trim_seq_len = len(trim_seq(bs_seq, args.trimStart, args.trimEnd))
+        if(args.trimStart == 0):
+            beg = -1
+        else:
+            beg = args.trimStart
+        
+        # now, determine the me states per pair
+        for P in elig_pairs:
+            P = tuple(P)
+            if not Read.is_reverse:
+                b1 = int(P[1]) - r_start
+                b2 = int(P[2]) - 1 - r_start
                 
-                    if not state in ['ZZ','Zz','zZ','zz']:
-                    #raise StandardError("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], #Read.query_name))
-                        warnings.warn("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, int(p[1]), int(p[2]), Read.query_name))
-                        continue
-                
-                    # record state in temporary dictionary
-                    
-                    sdc = dict(itertools.izip(['ZZ','Zz','zZ','zz'], [0,0,0,0]))
-                    sdc[state] += 1
-                    
-                    # update dictionary of pairs
-                    pairs_dict[P][0] += sdc['ZZ'] 
-                    pairs_dict[P][1] += sdc['Zz']
-                    pairs_dict[P][2] += sdc['zZ']
-                    pairs_dict[P][3] += sdc['zz']
+            else:
+                b1 = int(P[1]) + 1 - r_start
+                b2 = int(P[2]) - r_start
+            
+            if b1 > beg and b2 <= trim_seq_len:
+                state = bs_seq[b1] + bs_seq[b2-1]
+            else:
+                #print("skipped position (%s, %d, %d) for read %s due to trimming" %(chrom, int(P[1]), int(P[2]), Rname))
+                #print(b1, b2, args.trimStart, trim_seq_len)
+                continue
+        
+            if not state in ['ZZ','Zz','zZ','zz']:
+                #raise StandardError("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, P[1], P[2], #Read.query_name))
+                warnings.warn("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, int(P[1]), int(P[2]), Rname))
+                continue
+        
+            # record state in temporary dictionary
+            sdc = dict(itertools.izip(['ZZ','Zz','zZ','zz'], [0,0,0,0]))
+            sdc[state] += 1
+            
+            # update dictionary of pairs
+            pairs_dict[P][0] += sdc['ZZ'] 
+            pairs_dict[P][1] += sdc['Zz']
+            pairs_dict[P][2] += sdc['zZ']
+            pairs_dict[P][3] += sdc['zz']
     
     # save output
     out = open(args.outfile + 'CpG_pair_states.txt', 'wb')
@@ -139,9 +170,11 @@ def main():
             chrom, cpg1, cpg2 = i[0], int(i[1]), int(i[2])
             ZZ, Zz, zZ, zz = pairs_dict[i][0], pairs_dict[i][1], pairs_dict[i][2], pairs_dict[i][3]
             out.write("%s\t%d\t%d\t%d\t%d\t%d\t%d\n" % (chrom, cpg1, cpg2, ZZ, Zz, zZ, zz))
+            print("wrote!")
     
     
     out.close()
+    print(pairs_dict)
 
 if __name__ == '__main__':
     main()
