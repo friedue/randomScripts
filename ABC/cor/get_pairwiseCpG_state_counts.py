@@ -81,42 +81,43 @@ def main():
         r_end = int(Read.reference_end)
         
         # get pairs within the read's range
-        elig_pairs = [Pair for Pair in pairs_coords if Pair[0] == chrom and Pair[1] >= r_start and Pair[2] <= r_end]
+        if Read.mapping_quality >= args.minMapQual:
+            elig_pairs = [Pair for Pair in pairs_coords if Pair[0] == chrom and Pair[1] >= r_start and Pair[2] <= r_end]
         
-        if len(elig_pairs) > 0 and Read.mapping_quality >= args.minMapQual:
-            # first, check CIGAR string for coordinate-altering operations
-            cs = Read.cigarstring
-            if 'D' in cs or 'I' in cs or 'N' in cs or 'H' in cs or 'P' in cs:
-                bs_seq = get_CIGARbased_sequence(Read)
-            else:
-                bs_seq = [item for item in Read.tags if item[0] == 'XM'][0][1]
-            
-            for p in elig_pairs:
-                if not Read.is_reverse:
-                    b1 = p[1] - r_start
-                    b2 = p[2] - 1 - r_start
-                    
+            if len(elig_pairs) > 0:
+                # first, check CIGAR string for coordinate-altering operations
+                cs = Read.cigarstring
+                if 'D' in cs or 'I' in cs or 'N' in cs or 'H' in cs or 'P' in cs:
+                    bs_seq = get_CIGARbased_sequence(Read)
                 else:
-                    b1 = p[1] + 1 - r_start
-                    b2 = p[2] - r_start
+                    bs_seq = [item for item in Read.tags if item[0] == 'XM'][0][1]
+                
+                for p in elig_pairs:
+                    if not Read.is_reverse:
+                        b1 = p[1] - r_start
+                        b2 = p[2] - 1 - r_start
+                        
+                    else:
+                        b1 = p[1] + 1 - r_start
+                        b2 = p[2] - r_start
+                        
+                    state = bs_seq[b1] + bs_seq[b2-1]
                     
-                state = bs_seq[b1] + bs_seq[b2-1]
-                
-                if not state in ['ZZ','Zz','zZ','zz']:
-                    #raise StandardError("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], #Read.query_name))
-                    warnings.warn("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], Read.query_name))
-                    continue
-                
-                # record state in temporary dictionary
-                
-                sdc = dict(itertools.izip(['ZZ','Zz','zZ','zz'], [0,0,0,0]))
-                sdc[state] += 1
-                
-                # update dictionary of pairs
-                pairs_dict[p][0] += sdc['ZZ'] 
-                pairs_dict[p][1] += sdc['Zz']
-                pairs_dict[p][2] += sdc['zZ']
-                pairs_dict[p][3] += sdc['zz']
+                    if not state in ['ZZ','Zz','zZ','zz']:
+                        #raise StandardError("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], #Read.query_name))
+                        warnings.warn("Did not find a z or Z at the expected position (%s, %d, %d) within read %s" % (chrom, p[1], p[2], Read.query_name))
+                        continue
+                    
+                    # record state in temporary dictionary
+                    
+                    sdc = dict(itertools.izip(['ZZ','Zz','zZ','zz'], [0,0,0,0]))
+                    sdc[state] += 1
+                    
+                    # update dictionary of pairs
+                    pairs_dict[p][0] += sdc['ZZ'] 
+                    pairs_dict[p][1] += sdc['Zz']
+                    pairs_dict[p][2] += sdc['zZ']
+                    pairs_dict[p][3] += sdc['zz']
     
     # save output
     out = open(args.outfile + 'CpG_pair_states.txt', 'wb')
