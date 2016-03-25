@@ -141,8 +141,6 @@ def main():
             if b1 > beg and b2 <= trim_seq_len:
                 state = bs_seq[b1] + bs_seq[b2-1]
             else:
-                #print("skipped position (%s, %d, %d) for read %s due to trimming" %(chrom, int(P[1]), int(P[2]), Rname))
-                #print(b1, b2, args.trimStart, trim_seq_len)
                 continue
         
             if not state in ['ZZ','Zz','zZ','zz']:
@@ -170,11 +168,9 @@ def main():
             chrom, cpg1, cpg2 = i[0], int(i[1]), int(i[2])
             ZZ, Zz, zZ, zz = pairs_dict[i][0], pairs_dict[i][1], pairs_dict[i][2], pairs_dict[i][3]
             out.write("%s\t%d\t%d\t%d\t%d\t%d\t%d\n" % (chrom, cpg1, cpg2, ZZ, Zz, zZ, zz))
-            print("wrote!")
     
     
     out.close()
-    print(pairs_dict)
 
 if __name__ == '__main__':
     main()
