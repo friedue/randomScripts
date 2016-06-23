@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-'''This program should take a BAM file produced by Bismark and return a table where for each read the following values are indicated: %meC, # methylated C, # unmethylated C, read length. '''
+'''This program should take a BAM file produced by Bismark and return a table where for each read the following values are indicated: # methylated C, # unmethylated C, # methylated other C, # unmethylated other C, # not a C, read length. '''
 
 import sys
 import argparse
