@@ -9,9 +9,7 @@
 #' names(genes) <- c("chr","source","type","start","end","score","strand","phase","attributes")
 #' genes$score <- NULL
 #' genes$phase <- NULL
-#' setkey(genes, chr, start, end)
-#' pir.peaks.genes <- foverlaps(pir.peaks.merged, genes, nomatch = 0)
-#' pir.peaks.genes$gene_id <- lapply(pir.peaks.genes$attributes, extract_attributes, "gene_id") %>% unlist
+#' genes$gene_id <- unlist(lapply(genes$attributes, extract_attributes, "gene_id"))
 extract_attributes <- function(gtf_attributes, att_of_interest){
 	library(data.table)
 	att <- strsplit(gtf_attributes, "; ")
